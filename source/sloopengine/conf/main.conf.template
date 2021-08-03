@@ -1,0 +1,11 @@
+{
+  "account":{
+    "url":"{{vars['resource']['account']['url']}}"
+  },
+  "user":{
+    "api_key":{
+      "identifier":"{{vars['resource']['user']['api_key']['identifier']}}",
+      "token":"{{vars['resource']['user']['api_key']['token']}}"
+    }
+  }
+}

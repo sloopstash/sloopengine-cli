@@ -1,0 +1,5 @@
+subprocess32==3.5.4
+requests==2.26.0
+jinja2==3.0.1
+fqdn==1.5.1
+termcolor==1.1.0
