@@ -29,8 +29,7 @@ if __name__=='__main__':
     install_requires=[
       'subprocess32==3.5.4',
       'requests==2.26.0',
-      'jinja2==3.0.1',
-      'fqdn==1.5.1',
+      'validators==0.18.2',
       'termcolor==1.1.0'
     ],
     entry_points={
@@ -39,12 +38,16 @@ if __name__=='__main__':
       ]
     },
     data_files=[
-      (
-        '/etc/sloopengine',[
-          'source/sloopengine/conf/main.conf',
-          'source/sloopengine/conf/main.conf.template'
-        ]
-      )
+      ('/opt/sloopengine',[]),
+      ('/opt/sloopengine/data',[]),
+      ('/opt/sloopengine/data/identity',[]),
+      ('/opt/sloopengine/log',[
+        'source/sloopengine/log/main.log'
+      ]),
+      ('/opt/sloopengine/conf',[
+        'source/sloopengine/conf/main.conf',
+        'source/sloopengine/conf/credential.conf'
+      ])
     ],
     url='https://github.com/sloopstash/sloopengine-cli',
     project_urls={

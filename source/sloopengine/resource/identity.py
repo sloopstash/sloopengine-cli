@@ -1,16 +1,13 @@
-# -*- coding: utf-8 -*-
-from __future__ import (absolute_import,unicode_literals)
-  
 # Import community modules.
 import os
 import sys
-import json
 import requests
 from subprocess32 import call
 from termcolor import cprint
 
 # Import custom modules.
-from sloopengine.config import config
+from sloopengine.config import main_conf
+from sloopengine.config import credential_conf
 
 
 # Identity controller.
@@ -18,65 +15,75 @@ class identity(object):
 
   # Initializer.
   def __init__(self,**kwargs):
-    self.system = {}
-    self.account = {}
-    self.user = {}
-    self.system['base_home_dir'] = config['system']['base_home_dir']
-    self.account['full_domain'] = config['account']['full_domain']
-    self.account['scheme'] = config['account']['scheme']
-    self.user['api_key_identifier'] = config['user']['api_key_identifier']
-    self.user['api_key_token'] = config['user']['api_key_token']
+    self.account = {
+      'url':main_conf['account']['url']
+    }
+    self.user = {
+      'api_key':{
+        'id':credential_conf['user']['api_key']['id'],
+        'token':credential_conf['user']['api_key']['token']
+      }
+    }
 
-  # Setup base home directory.
-  def setup_base_home_dir(self):
+  # Create Identity.
+  def create(self,data):
     try:
-      call(['mkdir','-p',self.system['base_home_dir']])
+      add_user = call(['useradd','-m','-s','/bin/bash','-d',data['home_dir'],data['name']])
+      if add_user!=0:
+        raise
+      call(['chmod','-R','o-rwx',data['home_dir']])
+      cprint('Identity created.','green')
     except Exception as Error:
-      cprint('Error setting-up system base home directory.','red')
+      self.remove(data)
+      cprint('Error creating Identity.','red')
       sys.exit(1)
 
   # Get Identity.
-  def get(self,params):
-    params = json.loads(params)
-    request = requests.get(
-      self.account['scheme']+'://'+self.account['full_domain']+'/API/Stack/'+str(params['stack_id'])+'/Identity/'+str(params['identity_id']),
-      headers={'Authorization':'SLEN '+self.user['api_key_identifier']+':'+self.user['api_key_token']}
-    )
-    response = request.json()
-    return {'request':request,'response':response}
+  def get(self,data):
+    try:
+      self.stack = data['stack']
+      self.id = data['id']
+      url = ''.join(
+        '%s/API/Stack/%s/Identity/%s'
+        %(self.account['url'],self.stack['id'],self.id)
+      )
+      headers = {
+        'Authorization':''.join(
+          'SloopEngine %s:%s'
+          %(self.user['api_key']['id'],self.user['api_key']['token'])
+        )
+      }
+      request = requests.get(url,headers=headers)
+      response = request.json()
+      if request.status_code==200 and response['status']=='success':
+        identity_data = response['result']['identity']
+      else:
+        return
+    except Exception as error:
+      raise
+    else:
+      return identity_data
 
   # Sync Identity.
-  def sync(self,params):
-    data = self.get(params)
-    if data['request'].status_code==200 and data['response']['status']=='success' and data['response'].has_key('result'):
-      identity_data = data['response']['result']['identity']
+  def sync(self,data):
+    try:
+      identity_data = self.get(data)
+      assert identity_data is not None,'Identity does not exist.'
       if self.exists(identity_data) is True:
         cprint('Identity already exists.','yellow')
-        identity_data['home_dir'] = self.system['base_home_dir']+'/'+identity_data['name']
         self.update_keys(identity_data)
-        sys.exit(1)
-      self.setup_base_home_dir()
-      identity_data['home_dir'] = self.system['base_home_dir']+'/'+identity_data['name']
+        sys.exit(0)
       self.create(identity_data)
       self.configure(identity_data)
       self.update_keys(identity_data)
-    else:
-      cprint('Error syncing Identity.','red')
+    except AssertionError as error:
+      cprint(error.args[0],'red')
       sys.exit(1)
-
-  # Rotate Identity keys.
-  def rotate_keys(self,params):
-    params = json.loads(params)
-    request = requests.get(
-      self.account['scheme']+'://'+self.account['full_domain']+'/API/Stack/'+str(params['stack_id'])+'/Identity/'+str(params['identity_id'])+'/RotateKeys',
-      headers={'Authorization':'SLEN '+self.user['api_key_identifier']+':'+self.user['api_key_token']}
-    )
-    response = request.json()
-    if request.status_code==200 or response['status']=='success':
-      cprint('Identity keys rotated.','green')
-    else:
-      cprint('Error rotating Identity keys.','red')
+    except Exception as error:
+      cprint('Internal error.','red')
       sys.exit(1)
+    else:
+      return Response
 
   # Delete Identity.
   def delete(self,params):
@@ -99,18 +106,7 @@ class identity(object):
     else:
       return False
 
-  # Create Identity.
-  def create(self,data):
-    try:
-      add_user = call(['useradd','-m','-s','/bin/bash','-d',data['home_dir'],data['name']])
-      if add_user!=0:
-        raise
-      call(['chmod','-R','o-rwx',data['home_dir']])
-      cprint('Identity created.','green')
-    except Exception as Error:
-      self.remove(data)
-      cprint('Error creating Identity.','red')
-      sys.exit(1)
+
 
   # Configure Identity.
   def configure(self,data):
