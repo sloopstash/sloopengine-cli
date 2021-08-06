@@ -3,6 +3,7 @@ import os
 import sys
 import requests
 from subprocess32 import call
+from subprocess32 import DEVNULL,STDOUT
 from termcolor import cprint
 
 # Import custom modules.
@@ -15,6 +16,7 @@ class identity(object):
 
   # Initializer.
   def __init__(self,**kwargs):
+    self.data_dir = kwargs['data_dir']
     self.account = {
       'url':main_conf['account']['url']
     }
@@ -26,17 +28,74 @@ class identity(object):
     }
 
   # Create Identity.
-  def create(self,data):
+  def create(self,name):
     try:
-      add_user = call(['useradd','-m','-s','/bin/bash','-d',data['home_dir'],data['name']])
+      home_dir = '%s/identity/%s' %(self.data_dir,name)
+      add_user = call(['useradd','-m','-s','/bin/bash','-d',home_dir,name],stdout=DEVNULL,stderr=STDOUT)
       if add_user!=0:
         raise
-      call(['chmod','-R','o-rwx',data['home_dir']])
-      cprint('Identity created.','green')
-    except Exception as Error:
-      self.remove(data)
+      call(['chmod','-R','660',home_dir])
+    except Exception as error:
       cprint('Error creating Identity.','red')
       sys.exit(1)
+    else:
+      cprint('Identity created.','green')
+
+  # Configure Identity.
+  def configure(self,name):
+    try:
+      home_dir = '%s/identity/%s' %(self.data_dir,name)
+
+      def ssh_client(home_dir):
+        conf_dir = '%s/.ssh' %(home_dir)
+        conf_path = '%s/config' %(conf_dir)
+        private_key_path = '%s/id_rsa' %(conf_dir)
+        authorized_keys_path = '%s/authorized_keys' %(conf_dir)
+        call(['mkdir',conf_dir])
+        call(['chmod','-R','700',conf_dir])
+        call(['touch',conf_path])
+        call(['chmod','600',conf_path])
+        call(['touch',private_key_path])
+        call(['chmod','400',private_key_path])
+        call(['touch',authorized_keys_path])
+        call(['chmod','600',authorized_keys_path])
+        call(['chown','-R','%s:%s' %(name,name),conf_dir])
+        if os.path.isfile(conf_path):
+          conf_file = open(conf_path,'wt')
+          conf_file.write('Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/dev/null\n')
+          conf_file.close()
+
+      ssh_client(home_dir)
+    except Exception as error:
+      cprint('Error configuring Identity.','red')
+      sys.exit(1)
+    else:
+      cprint('Identity configured.','green')
+
+  # Update Identity.
+  def update(self,name,key):
+    try:
+      home_dir = '%s/identity/%s' %(self.data_dir,name)
+
+      def ssh_client(home_dir):
+        conf_dir = '%s/.ssh' %(home_dir)
+        private_key_path = '%s/id_rsa' %(conf_dir)
+        authorized_keys_path = '%s/authorized_keys' %(conf_dir)
+        if os.path.isfile(private_key_path):
+          private_key_file = open(private_key_path,'wt')
+          private_key_file.write(key['private'])
+          private_key_file.close()
+        if os.path.isfile(authorized_keys_path):
+          authorized_keys_file = open(authorized_keys_path,'wt')
+          authorized_keys_file.write(key['public'])
+          authorized_keys_file.close()
+
+      ssh_client(home_dir)
+    except Exception as error:
+      cprint('Error updating Identity.','red')
+      sys.exit(1)
+    else:
+      cprint('Identity updated.','green')
 
   # Get Identity.
   def get(self,data):
@@ -69,107 +128,49 @@ class identity(object):
     try:
       identity_data = self.get(data)
       assert identity_data is not None,'Identity does not exist.'
-      if self.exists(identity_data) is True:
+      name = identity_data['name']
+      key = {
+        'private':identity_data['private_key'],
+        'public':identity_data['public_key']
+      } 
+      if self.exists(name) is True:
         cprint('Identity already exists.','yellow')
-        self.update_keys(identity_data)
+        self.update(name,key)
         sys.exit(0)
-      self.create(identity_data)
-      self.configure(identity_data)
-      self.update_keys(identity_data)
+      self.create(name)
+      self.configure(name)
+      self.update(name,key)
     except AssertionError as error:
       cprint(error.args[0],'red')
       sys.exit(1)
     except Exception as error:
-      cprint('Internal error.','red')
+      cprint('Error syncing Identity.','red')
       sys.exit(1)
     else:
-      return Response
+      cprint('Identity synced.','green')
+      sys.exit(0)
 
   # Delete Identity.
-  def delete(self,params):
-    data = self.get(params)
-    if data['request'].status_code==200 and data['response']['status']=='success' and data['response'].has_key('result'):
-      identity_data = data['response']['result']['identity']
-      if self.exists(identity_data) is False:
-        cprint('Identity does not exist.','yellow')
+  def delete(self,name):
+    try:
+      if self.exists(name) is True:
+        delete_user = call(['userdel','-r',name],stdout=DEVNULL,stderr=STDOUT)
+        if delete_user!=0:
+          raise
+      else:
+        cprint('Identity does not exist.','red')
         sys.exit(1)
-      self.remove(identity_data)
-    else:
-      cprint('Error deleting Identity.','red')
-      sys.exit(1)
-
-  # Check Identity exists.
-  def exists(self,data):
-    id = call(['id',data['name']])
-    if id==0:
-      return True
-    else:
-      return False
-
-
-
-  # Configure Identity.
-  def configure(self,data):
-    try:
-      def keys(data):
-        call(['touch',data['home_dir']+'/.ssh/authorized_keys'])
-        call(['chmod','600',data['home_dir']+'/.ssh/authorized_keys'])
-        call(['touch',data['home_dir']+'/.ssh/id_rsa'])
-        call(['chmod','400',data['home_dir']+'/.ssh/id_rsa'])
-
-      def permission(data):
-        call(['chmod','-R','700',data['home_dir']+'/.ssh'])
-
-      def ownership(data):
-        call(['chown','-R',data['name']+':'+data['name'],data['home_dir']+'/.ssh'])
-
-      def settings(data):
-        call(['touch',data['home_dir']+'/.ssh/config'])
-        config_path = data['home_dir']+'/.ssh/config'
-        if os.path.isfile(config_path):
-          config_file = open(config_path,'wt')
-          config_file.write('Host *\n\tStrictHostKeyChecking no\n')
-          config_file.close()
-
-      ssh_dir = call(['mkdir',data['home_dir']+'/.ssh'])
-      if ssh_dir!=0:
-        raise
-      permission(data)
-      keys(data)
-      settings(data)
-      ownership(data)
-    except Exception as Error:
-      self.remove(data)
-      cprint('Error configuring Identity.','red')
-      sys.exit(1)
-
-  # Update Identity keys.
-  def update_keys(self,data):
-    try:
-      authorized_keys = data['home_dir']+'/.ssh/authorized_keys'
-      if os.path.isfile(authorized_keys):
-        public_key = open(authorized_keys,'wt')
-        public_key.write(data['public_key'])
-        public_key.close()
-      id_rsa = data['home_dir']+'/.ssh/id_rsa'
-      if os.path.isfile(id_rsa):
-        private_key = open(id_rsa,'wt')
-        private_key.write(data['private_key'])
-        private_key.close()
-      cprint('Identity keys updated.','green')
-    except Exception as Error:
-      self.remove(data)
-      cprint('Error updating Identity keys.','red')
-      sys.exit(1)
-
-  # Remove Identity.
-  def remove(self,data):
-    try:
-      delete_user = call(['userdel','-r',data['name']])
-      if delete_user!=0:
-        raise
-    except Exception as Error:
+    except Exception as error:
       cprint('Error deleting Identity.','red')
       sys.exit(1)
     else:
       cprint('Identity deleted.','green')
+      sys.exit(0)
+
+  # Check Identity exists.
+  def exists(self,name):
+    id = call(['id',name],stdout=DEVNULL,stderr=STDOUT)
+    if id==0:
+      return True
+    else:
+      return False

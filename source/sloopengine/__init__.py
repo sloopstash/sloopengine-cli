@@ -11,6 +11,8 @@ from termcolor import cprint
 # Global variables.
 version = '1.1.1'
 base_dir = '/opt/sloopengine'
+data_dir = '%s/data' %(base_dir)
+log_dir = '%s/log' %(base_dir)
 conf_dir = '%s/conf' %(base_dir)
 main_conf_path = '%s/main.conf' %(conf_dir)
 credential_conf_path = '%s/credential.conf' %(conf_dir)
@@ -38,6 +40,8 @@ class cli(object):
   def __init__(self):
     self.version = version
     self.base_dir = base_dir
+    self.data_dir = data_dir
+    self.log_dir = log_dir
     self.conf_dir = conf_dir
     self.main_conf_path = main_conf_path
     self.credential_conf_path = credential_conf_path
@@ -126,12 +130,11 @@ class cli(object):
     parser = argparse.ArgumentParser(
       prog='sloopengine identity',
       description=dedent('''
-        Manage Identity using SloopEngine CLI.
+        Manage Identities using SloopEngine CLI.
 
         Commands:
           sync          Sync Identity.
-          rotate-keys   Rotate keys of an Identity.
-          remove        Remove Identity from the machine.
+          delete        Delete Identity from the machine.
       '''),
       formatter_class=argparse.RawDescriptionHelpFormatter,
       usage='%(prog)s [<args>]',
@@ -142,22 +145,28 @@ class cli(object):
         Email: support@sloopstash.com
       ''')
     )
-    parser.add_argument('command',choices=['sync','rotate-keys','remove'])
-    parser.add_argument('--stack-id',type=int,metavar='<integer>',help='Stack identifier.',required=True)
-    parser.add_argument('--id',type=int,metavar='<integer>',help='Identity identifier.',required=True)
+    parser.add_argument('command',choices=['sync','delete'])
+    parser.add_argument('--stack-id',type=int,metavar='<integer>',help='Stack identifier.')
+    parser.add_argument('--id',type=int,metavar='<integer>',help='Identity identifier.')
+    parser.add_argument('--name',metavar='<string>',help='Identity name.')
     args = parser.parse_args(sys.argv[2:])
-    params = {
-      'stack':{
-        'id':args.stack_id
-      },
-      'id':args.id
-    }
+
     if args.command=='sync':
-      identity().sync(params)
-    elif args.command=='rotate-keys':
-      identity().rotate_keys(params)
-    elif args.command=='remove':
-      identity().remove(params)
+      if args.stack_id is None or args.id is None:
+        cprint('Invalid args.','red')
+        sys.exit(1)
+      params = {
+        'stack':{
+          'id':args.stack_id
+        },
+        'id':args.id
+      }
+      identity(data_dir=self.data_dir).sync(params)
+    elif args.command=='delete':
+      if args.name is None:
+        cprint('Invalid args.','red')
+        sys.exit(1)
+      identity(data_dir=self.data_dir).delete(args.name)
     else:
       cprint('Invalid command.','red')
       sys.exit(1)
