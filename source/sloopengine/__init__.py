@@ -88,7 +88,7 @@ class cli(object):
 
   # Manage CLI configuration.
   def configure(self):
-    call(['chmod','-R','660',self.base_dir])
+    call(['chmod','-R','750',self.base_dir])
     params = {
       'main':{
         'account':{

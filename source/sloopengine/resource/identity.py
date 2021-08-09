@@ -33,7 +33,7 @@ class identity(object):
       add_user = call(['useradd','-m','-s','/bin/bash','-d',home_dir,name],stdout=DEVNULL,stderr=STDOUT)
       if add_user!=0:
         raise
-      call(['chmod','-R','750',home_dir])
+      call(['chmod','750',home_dir])
     except Exception as error:
       cprint('Error creating Identity.','red')
       sys.exit(1)
