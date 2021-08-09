@@ -40,7 +40,6 @@ if __name__=='__main__':
     data_files=[
       ('/opt/sloopengine',[]),
       ('/opt/sloopengine/data',[]),
-      ('/opt/sloopengine/data/identity',[]),
       ('/opt/sloopengine/log',[
         'source/sloopengine/log/main.log'
       ]),

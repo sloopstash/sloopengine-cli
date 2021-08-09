@@ -161,12 +161,12 @@ class cli(object):
         },
         'id':args.id
       }
-      identity(data_dir=self.data_dir).sync(params)
+      identity().sync(params)
     elif args.command=='delete':
       if args.name is None:
         cprint('Invalid args.','red')
         sys.exit(1)
-      identity(data_dir=self.data_dir).delete(args.name)
+      identity().delete(args.name)
     else:
       cprint('Invalid command.','red')
       sys.exit(1)

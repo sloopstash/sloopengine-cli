@@ -15,8 +15,7 @@ from sloopengine.config import credential_conf
 class identity(object):
 
   # Initializer.
-  def __init__(self,**kwargs):
-    self.data_dir = kwargs['data_dir']
+  def __init__(self):
     self.account = {
       'url':main_conf['account']['url']
     }
@@ -30,7 +29,7 @@ class identity(object):
   # Create Identity.
   def create(self,name):
     try:
-      home_dir = '%s/identity/%s' %(self.data_dir,name)
+      home_dir = '/home/%s' %(name)
       add_user = call(['useradd','-m','-s','/bin/bash','-d',home_dir,name],stdout=DEVNULL,stderr=STDOUT)
       if add_user!=0:
         raise
@@ -44,7 +43,7 @@ class identity(object):
   # Configure Identity.
   def configure(self,name):
     try:
-      home_dir = '%s/identity/%s' %(self.data_dir,name)
+      home_dir = '/home/%s' %(name)
 
       def ssh_client(home_dir):
         conf_dir = '%s/.ssh' %(home_dir)
@@ -75,7 +74,7 @@ class identity(object):
   # Update Identity.
   def update(self,name,key):
     try:
-      home_dir = '%s/identity/%s' %(self.data_dir,name)
+      home_dir = '/home/%s' %(name)
 
       def ssh_client(home_dir):
         conf_dir = '%s/.ssh' %(home_dir)
