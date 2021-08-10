@@ -50,19 +50,23 @@ class identity(object):
         conf_path = '%s/config' %(conf_dir)
         private_key_path = '%s/id_rsa' %(conf_dir)
         authorized_keys_path = '%s/authorized_keys' %(conf_dir)
-        call(['mkdir',conf_dir])
-        call(['chmod','-R','700',conf_dir])
-        call(['touch',conf_path])
-        call(['chmod','600',conf_path])
-        call(['touch',private_key_path])
-        call(['chmod','400',private_key_path])
-        call(['touch',authorized_keys_path])
-        call(['chmod','600',authorized_keys_path])
-        call(['chown','-R','%s:%s' %(name,name),conf_dir])
-        if os.path.isfile(conf_path):
+        if os.path.exists(conf_dir) is False:
+          os.mkdir(conf_dir)
+          call(['chmod','700',conf_dir])
+        if os.path.isfile(conf_path) is False:
           conf_file = open(conf_path,'wt')
           conf_file.write('Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/dev/null\n')
           conf_file.close()
+          call(['chmod','600',conf_path])
+        if os.path.isfile(private_key_path) is False:
+          private_key_file = open(private_key_path,'a')
+          private_key_file.close()
+          call(['chmod','400',private_key_path])
+        if os.path.isfile(authorized_keys_path) is False:
+          authorized_keys_file = open(authorized_keys_path,'a')
+          authorized_keys_file.close()
+          call(['chmod','600',authorized_keys_path])
+        call(['chown','-R','%s:%s' %(name,name),conf_dir])
 
       ssh_client(home_dir)
     except Exception as error:
@@ -80,11 +84,11 @@ class identity(object):
         conf_dir = '%s/.ssh' %(home_dir)
         private_key_path = '%s/id_rsa' %(conf_dir)
         authorized_keys_path = '%s/authorized_keys' %(conf_dir)
-        if os.path.isfile(private_key_path):
+        if os.path.isfile(private_key_path) is True:
           private_key_file = open(private_key_path,'wt')
           private_key_file.write(key['private'])
           private_key_file.close()
-        if os.path.isfile(authorized_keys_path):
+        if os.path.isfile(authorized_keys_path) is True:
           authorized_keys_file = open(authorized_keys_path,'wt')
           authorized_keys_file.write(key['public'])
           authorized_keys_file.close()

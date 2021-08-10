@@ -14,7 +14,6 @@ if __name__=='__main__':
   # Setup configuration.
   setup(
     classifiers=[
-      'Programming Language :: Python :: 2.7',
       'Programming Language :: Python :: 3.6',
       'Programming Language :: Python :: 3.7',
       'Programming Language :: Python :: 3.8',
@@ -22,7 +21,7 @@ if __name__=='__main__':
       'License :: OSI Approved :: Apache Software License',
       'Operating System :: OS Independent'
     ],
-    python_requires='==2.7.*,==3.6.*,==3.7.*,==3.8.*,==3.9.*',
+    python_requires='>=3.6',
     package_dir={'':'source'},
     # packages=['sloopengine'],
     packages=find_packages(where='source'),
@@ -37,17 +36,17 @@ if __name__=='__main__':
         'sloopengine=sloopengine:cli'
       ]
     },
-    data_files=[
-      ('/opt/sloopengine',[]),
-      ('/opt/sloopengine/data',[]),
-      ('/opt/sloopengine/log',[
-        'source/sloopengine/log/main.log'
-      ]),
-      ('/opt/sloopengine/conf',[
-        'source/sloopengine/conf/main.conf',
-        'source/sloopengine/conf/credential.conf'
-      ])
-    ],
+    # data_files=[
+    #   ('/opt/sloopengine',[]),
+    #   ('/opt/sloopengine/data',[]),
+    #   ('/opt/sloopengine/log',[
+    #     'source/sloopengine/log/main.log'
+    #   ]),
+    #   ('/opt/sloopengine/conf',[
+    #     'source/sloopengine/conf/main.conf',
+    #     'source/sloopengine/conf/credential.conf'
+    #   ])
+    # ],
     url='https://github.com/sloopstash/sloopengine-cli',
     project_urls={
       'Source':'https://github.com/sloopstash/sloopengine-cli',
