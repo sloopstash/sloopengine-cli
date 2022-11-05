@@ -9,7 +9,7 @@ from termcolor import cprint
 
 
 # Global variables.
-version = '1.1.5'
+version = '2.1.1'
 base_dir = '/opt/sloopengine'
 data_dir = '%s/data' %(base_dir)
 log_dir = '%s/log' %(base_dir)
@@ -21,9 +21,8 @@ main_log_path = '%s/main.log' %(log_dir)
 
 # Import custom modules.
 from sloopengine.includes.common import url_validate
-from sloopengine.includes.common import api_key_id_validate
-from sloopengine.includes.common import api_key_token_validate
-from sloopengine.resource.identity import identity
+from sloopengine.includes.common import token_validate
+from sloopengine.resource.credential import credential
 
 
 # CLI controller.
@@ -55,7 +54,7 @@ class cli(object):
         Commands:
           init          Initialize CLI.
           configure     Configure CLI.
-          identity      Manage Identities.
+          credential    Manage Credentials.
           agent         Manage Agent.
           version       Print CLI version.
       '''),
@@ -73,15 +72,15 @@ class cli(object):
       'command',
       nargs='?',
       default='version',
-      choices=['init','configure','identity','agent','version']
+      choices=['init','configure','credential','agent','version']
     )
     args = parser.parse_args(sys.argv[1:2])
     if args.command=='init':
       self.initialize()
     elif args.command=='configure':
       self.configure()
-    elif args.command=='identity':
-      self.identity()
+    elif args.command=='credential':
+      self.credential()
     elif args.command=='agent':
       self.agent()
     elif args.command=='version':
@@ -143,21 +142,15 @@ class cli(object):
         },
         'credential':{
           'user':{
-            'api_key':{
-              'id':None,
-              'token':None
-            }
+            'token':None
           }
         }
       }
       params['main']['account']['url'] = input('Enter Account url: ')
       if url_validate(params['main']['account']['url']) is not True:
         sys.exit(1)
-      params['credential']['user']['api_key']['id'] = input('Enter User API key identifier: ')
-      if api_key_id_validate(params['credential']['user']['api_key']['id']) is not True:
-        sys.exit(1)
-      params['credential']['user']['api_key']['token'] = input('Enter User API key token: ')
-      if api_key_token_validate(params['credential']['user']['api_key']['token']) is not True:
+      params['credential']['user']['token'] = input('Enter User token: ')
+      if token_validate(params['credential']['user']['token']) is not True:
         sys.exit(1)
       main_conf_file = open(self.main_conf_path,'wt')
       main_conf_file.write(json.dumps(
@@ -180,20 +173,20 @@ class cli(object):
       sys.exit(0)
 
   # Manage Identities using CLI.
-  def identity(self):
+  def credential(self):
     try:
       assert os.path.exists(self.base_dir) is True,'CLI not initialized.'
       assert os.path.exists(self.conf_dir) is True,'CLI not initialized.'
       assert os.path.isfile(self.main_conf_path) is True,'CLI not initialized.'
       assert os.path.isfile(self.credential_conf_path) is True,'CLI not initialized.'
       parser = argparse.ArgumentParser(
-        prog='sloopengine identity',
+        prog='sloopengine credential',
         description=dedent('''
           Manage Identities using SloopEngine CLI.
 
           Commands:
-            sync          Sync Identity.
-            delete        Delete Identity from the machine.
+            sync          Sync Credential.
+            delete        Delete Credential from the machine.
         '''),
         formatter_class=argparse.RawDescriptionHelpFormatter,
         usage='%(prog)s [<args>]',
@@ -205,27 +198,27 @@ class cli(object):
         ''')
       )
       parser.add_argument('command',choices=['sync','delete'])
-      parser.add_argument('--stack-id',type=int,metavar='<integer>',help='Stack identifier.')
-      parser.add_argument('--id',type=int,metavar='<integer>',help='Identity identifier.')
-      parser.add_argument('--name',metavar='<string>',help='Identity name.')
+      parser.add_argument('--workspace-id',type=int,metavar='<integer>',help='Workspace identifier.')
+      parser.add_argument('--id',type=int,metavar='<integer>',help='Credential identifier.')
+      parser.add_argument('--name',metavar='<string>',help='Credential name.')
       args = parser.parse_args(sys.argv[2:])
 
       if args.command=='sync':
-        if args.stack_id is None or args.id is None:
+        if args.workspace_id is None or args.id is None:
           cprint('Invalid args.','red')
           sys.exit(1)
         params = {
-          'stack':{
-            'id':args.stack_id
+          'workspace':{
+            'id':args.workspace_id
           },
           'id':args.id
         }
-        identity().sync(params)
+        credential().sync(params)
       elif args.command=='delete':
         if args.name is None:
           cprint('Invalid args.','red')
           sys.exit(1)
-        identity().delete(args.name)
+        credential().delete(args.name)
       else:
         cprint('Invalid command.','red')
         sys.exit(1)

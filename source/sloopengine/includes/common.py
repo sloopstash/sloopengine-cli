@@ -34,15 +34,8 @@ def url_validate(url):
   else:
     cprint('Cannot accept empty url.','red')
 
-# Validate API key identifier.
-def api_key_id_validate(id):
-  if id:
-    return True
-  else:
-    cprint('Cannot accept empty identifier.','red')
-
-# Validate API key token.
-def api_key_token_validate(token):
+# Validate token.
+def token_validate(token):
   if token:
     return True
   else:

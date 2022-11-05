@@ -11,8 +11,8 @@ from sloopengine.config import main_conf
 from sloopengine.config import credential_conf
 
 
-# Identity controller.
-class identity(object):
+# Credential controller.
+class credential(object):
 
   # Initializer.
   def __init__(self):
@@ -26,7 +26,7 @@ class identity(object):
       }
     }
 
-  # Create Identity.
+  # Create Credential.
   def create(self,name):
     try:
       home_dir = '/home/%s' %(name)
@@ -35,12 +35,12 @@ class identity(object):
         raise
       call(['chmod','750',home_dir])
     except Exception as error:
-      cprint('Error creating Identity.','red')
+      cprint('Error creating Credential.','red')
       sys.exit(1)
     else:
-      cprint('Identity created.','green')
+      cprint('Credential created.','green')
 
-  # Configure Identity.
+  # Configure Credential.
   def configure(self,name):
     try:
       home_dir = '/home/%s' %(name)
@@ -70,12 +70,12 @@ class identity(object):
 
       ssh_client(home_dir)
     except Exception as error:
-      cprint('Error configuring Identity.','red')
+      cprint('Error configuring Credential.','red')
       sys.exit(1)
     else:
-      cprint('Identity configured.','green')
+      cprint('Credential configured.','green')
 
-  # Update Identity.
+  # Update Credential.
   def update(self,name,key):
     try:
       home_dir = '/home/%s' %(name)
@@ -95,19 +95,19 @@ class identity(object):
 
       ssh_client(home_dir)
     except Exception as error:
-      cprint('Error updating Identity.','red')
+      cprint('Error updating Credential.','red')
       sys.exit(1)
     else:
-      cprint('Identity updated.','green')
+      cprint('Credential updated.','green')
 
-  # Get Identity.
+  # Get Credential.
   def get(self,data):
     try:
-      self.stack = data['stack']
+      self.workspace = data['workspace']
       self.id = data['id']
       url = ''.join(
-        '%s/API/Stack/%s/Identity/%s'
-        %(self.account['url'],self.stack['id'],self.id)
+        '%s/API/Workspace/%s/Credential/%s'
+        %(self.account['url'],self.workspace['id'],self.id)
       )
       headers = {
         'Authorization':''.join(
@@ -118,26 +118,26 @@ class identity(object):
       request = requests.get(url,headers=headers)
       response = request.json()
       if request.status_code==200 and response['status']=='success':
-        identity_data = response['result']['identity']
+        credential_data = response['result']['credential']
       else:
         return
     except Exception as error:
       raise
     else:
-      return identity_data
+      return credential_data
 
-  # Sync Identity.
+  # Sync Credential.
   def sync(self,data):
     try:
-      identity_data = self.get(data)
-      assert identity_data is not None,'Identity does not exist.'
-      name = identity_data['name']
+      credential_data = self.get(data)
+      assert credential_data is not None,'Credential does not exist.'
+      name = credential_data['name']
       key = {
-        'private':identity_data['private_key'],
-        'public':identity_data['public_key']
+        'private':credential_data['private_key'],
+        'public':credential_data['public_key']
       } 
-      if self.exists(name) is True:
-        cprint('Identity already exists.','yellow')
+      if self.exist(name) is True:
+        cprint('Credential exist.','yellow')
         self.update(name,key)
         sys.exit(0)
       self.create(name)
@@ -147,31 +147,31 @@ class identity(object):
       cprint(error.args[0],'red')
       sys.exit(1)
     except Exception as error:
-      cprint('Error syncing Identity.','red')
+      cprint('Error syncing Credential.','red')
       sys.exit(1)
     else:
-      cprint('Identity synced.','green')
+      cprint('Credential synced.','green')
       sys.exit(0)
 
-  # Delete Identity.
+  # Delete Credential.
   def delete(self,name):
     try:
-      if self.exists(name) is True:
+      if self.exist(name) is True:
         delete_user = call(['userdel','-r',name],stdout=DEVNULL,stderr=STDOUT)
         if delete_user!=0:
           raise
       else:
-        cprint('Identity does not exist.','red')
+        cprint('Credential does not exist.','red')
         sys.exit(1)
     except Exception as error:
-      cprint('Error deleting Identity.','red')
+      cprint('Error deleting Credential.','red')
       sys.exit(1)
     else:
-      cprint('Identity deleted.','green')
+      cprint('Credential deleted.','green')
       sys.exit(0)
 
-  # Check Identity exists.
-  def exists(self,name):
+  # Check Credential exist.
+  def exist(self,name):
     id = call(['id',name],stdout=DEVNULL,stderr=STDOUT)
     if id==0:
       return True
