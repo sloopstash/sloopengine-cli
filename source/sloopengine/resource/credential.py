@@ -20,10 +20,7 @@ class credential(object):
       'url':main_conf['account']['url']
     }
     self.user = {
-      'api_key':{
-        'id':credential_conf['user']['api_key']['id'],
-        'token':credential_conf['user']['api_key']['token']
-      }
+      'token':credential_conf['user']['token']
     }
 
   # Create Credential.
@@ -111,14 +108,13 @@ class credential(object):
       )
       headers = {
         'Authorization':''.join(
-          'SloopEngine %s:%s'
-          %(self.user['api_key']['id'],self.user['api_key']['token'])
+          '%s' %(self.user['token'])
         )
       }
       request = requests.get(url,headers=headers)
       response = request.json()
       if request.status_code==200 and response['status']=='success':
-        credential_data = response['result']['credential']
+        credential_data = response['result']
       else:
         return
     except Exception as error:
